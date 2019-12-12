@@ -13,6 +13,7 @@ import options.options as option
 from utils import util
 from data import create_dataloader, create_dataset
 from models import create_model
+from torch.utils.data import DataLoader, SubsetRandomSampler
 
 
 def init_dist(backend='nccl', **kwargs):
@@ -105,6 +106,20 @@ def main():
             train_size = int(math.ceil(len(train_set) / dataset_opt['batch_size']))
             total_iters = int(opt['train']['niter'])
             total_epochs = int(math.ceil(total_iters / train_size))
+            if dataset_opt['use_text']:
+                import pdb
+                pdb.set_trace()
+                from lib.datasets.dataset import LmdbDataset as genTextDataset
+                print ("Start Load IIIT5K dataset!")
+                text_dataset = genTextDataset(dataset_opt['dataset_dir'],
+                        dataset_opt['voc_type'], dataset_opt['max_len'], dataset_opt['num_sample'])
+                print ("Load IIIT5K dataset success!")
+                text_dataloader = DataLoader(text_dataset,
+                        batch_size=dataset_opt['batch_size'],
+                        number_workers=dataset_opt['n_workers'],
+                        shuffle=True, pin_memory=True, drop_last=True,
+                        collate_fn=AlignCollate(imgH=height, imgW=width, keep_ratio=keep_ratio))
+
             if opt['dist']:
                 train_sampler = DistIterSampler(train_set, world_size, rank, dataset_ratio)
                 total_epochs = int(math.ceil(total_iters / (train_size * dataset_ratio)))
@@ -125,9 +140,10 @@ def main():
         else:
             raise NotImplementedError('Phase [{:s}] is not recognized.'.format(phase))
     assert train_loader is not None
+    assert len(train_loader) == len(text_dataloader), "text gt size should be the same as training dataset"
 
     #### create model
-    model = create_model(opt)
+    model = create_model(opt, text_dataset)
 
     #### resume training
     if resume_state:
@@ -146,7 +162,7 @@ def main():
     for epoch in range(start_epoch, total_epochs + 1):
         if opt['dist']:
             train_sampler.set_epoch(epoch)
-        for _, train_data in enumerate(train_loader):
+        for _, (train_data, input_dict) in enumerate(zip(train_loader, text_dataloader)):
             current_step += 1
             if current_step > total_iters:
                 break

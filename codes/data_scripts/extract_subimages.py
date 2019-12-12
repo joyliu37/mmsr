@@ -26,10 +26,12 @@ def main():
         opt['thres_sz'] = 48  # size threshold
         extract_signle(opt)
     elif mode == 'pair':
-        GT_folder = '../../datasets/DIV2K/DIV2K_train_HR'
-        LR_folder = '../../datasets/DIV2K/DIV2K_train_LR_bicubic/X4'
-        save_GT_folder = '../../datasets/DIV2K/DIV2K800_sub'
-        save_LR_folder = '../../datasets/DIV2K/DIV2K800_sub_bicLRx4'
+        #GT_folder = '../../datasets/DIV2K/DIV2K_train_HR'
+        GT_folder = '../../test_dataset/marvel_gen/HR/x4/'
+        #LR_folder = '../../datasets/DIV2K/DIV2K_train_LR_bicubic/X4'
+        LR_folder = '../../test_dataset/marvel_gen/LR/x4'
+        save_GT_folder = '../../datasets/comic/HR'
+        save_LR_folder = '../../datasets/comic/LR'
         scale_ratio = 4
         crop_sz = 480  # the size of each sub-image (GT)
         step = 240  # step of the sliding crop window (GT)
@@ -132,7 +134,7 @@ def worker(path, opt):
             crop_img = np.ascontiguousarray(crop_img)
             cv2.imwrite(
                 osp.join(opt['save_folder'],
-                         img_name.replace('.png', '_s{:03d}.png'.format(index))), crop_img,
+                         img_name.replace('.jpeg', '_s{:03d}.png'.format(index))), crop_img,
                 [cv2.IMWRITE_PNG_COMPRESSION, opt['compression_level']])
     return 'Processing {:s} ...'.format(img_name)
 

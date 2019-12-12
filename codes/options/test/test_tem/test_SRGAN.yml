@@ -1,0 +1,32 @@
+name: MSRGANx4_95000
+suffix: ~  # add suffix to saved images
+model: sr
+distortion: sr
+scale: 4
+crop_border: ~  # crop border when evaluation. If None(~), crop the scale pixels
+gpu_ids: [0]
+
+datasets:
+  test_1:  # the 1st test dataset
+    name: TEM
+    mode: LQ
+    dataroot_LQ: ~/mmsr/test_dataset/TEM/LR/x4
+    #    dataroot_LQ: ../datasets/val_set5/Set5_bicLRx4
+    #  test_2:  # the 2st test dataset
+    #    name: set14
+    #    mode: LQGT
+    #    dataroot_GT: ../datasets/val_set14/Set14
+    #    dataroot_LQ: ../datasets/val_set14/Set14_bicLRx4
+
+#### network structures
+network_G:
+  which_model_G: MSRResNet
+  in_nc: 3
+  out_nc: 3
+  nf: 64
+  nb: 16
+  upscale: 4
+
+#### path
+path:
+  pretrain_model_G: ~/mmsr/experiments/tem_pretrain/models/95000_G.pth

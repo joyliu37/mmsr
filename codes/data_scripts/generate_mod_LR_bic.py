@@ -15,8 +15,12 @@ def generate_mod_LR_bic():
     up_scale = 4
     mod_scale = 4
     # set data dir
-    sourcedir = '/data/datasets/img'
-    savedir = '/data/datasets/mod'
+    #sourcedir = '/home/joeyliu/mmsr/datasets/val_set5/Set5'
+    #savedir = '/home/joeyliu/mmsr/datasets/val_set5'
+    #sourcedir = '/home/joeyliu/mmsr/test_dataset/marvel_val'
+    #savedir = '/home/joeyliu/mmsr/test_dataset/maKrvel_val_test'
+    sourcedir = '/home/joeyliu/aster.pytorch/IIIT5K/test'
+    savedir = '/home/joeyliu/mmsr/test_dataset/IIIT5K_test'
 
     saveHRpath = os.path.join(savedir, 'HR', 'x' + str(mod_scale))
     saveLRpath = os.path.join(savedir, 'LR', 'x' + str(up_scale))

@@ -2,7 +2,7 @@ import logging
 logger = logging.getLogger('base')
 
 
-def create_model(opt):
+def create_model(opt, dataset=None):
     model = opt['model']
     # image restoration
     if model == 'sr':  # PSNR-oriented super resolution
@@ -14,6 +14,9 @@ def create_model(opt):
         from .Video_base_model import VideoBaseModel as M
     else:
         raise NotImplementedError('Model [{:s}] not recognized.'.format(model))
-    m = M(opt)
+    if model == 'srgan':
+        m = M(opt, dataset)
+    else:
+        m = M(opt)
     logger.info('Model [{:s}] is created.'.format(m.__class__.__name__))
     return m

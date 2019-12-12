@@ -12,8 +12,12 @@ logger = logging.getLogger('base')
 
 
 class SRGANModel(BaseModel):
-    def __init__(self, opt):
+    def __init__(self, opt, dataset = None):
         super(SRGANModel, self).__init__(opt)
+
+        if dataset:
+            self.cri_text = True
+
         if opt['dist']:
             self.rank = torch.distributed.get_rank()
         else:
@@ -72,6 +76,21 @@ class SRGANModel(BaseModel):
                     pass  # do not need to use DistributedDataParallel for netF
                 else:
                     self.netF = DataParallel(self.netF)
+            if self.cri_text:
+                from lib.models.model_builder import ModelBuilder
+                self.netT = ModelBuilder(arch="ResNet_ASTER",
+                        rec_num_classes=dataset.rec_num_classes,
+                        sDim=512,
+                        attDim=512,
+                        max_len_labels=100,
+                        eos=dataset.char2id[dataset.EOS],
+                        STN_ON=True).to(self.device)
+
+                self.netT = DataParallel(self.netT)
+                self.netT.eval()
+                from lib.util.serialization import load_checkpoint
+                checkpoint = load_checkpoint(train_opt['text_model'])
+                self.netT.load_state_dict(checkpoint['state_dict'])
 
             # GD gan loss
             self.cri_gan = GANLoss(train_opt['gan_type'], 1.0, 0.0).to(self.device)
@@ -131,7 +150,7 @@ class SRGANModel(BaseModel):
             input_ref = data['ref'] if 'ref' in data else data['GT']
             self.var_ref = input_ref.to(self.device)
 
-    def optimize_parameters(self, step):
+    def optimize_parameters(self, step, text_input=None):
         # G
         for p in self.netD.parameters():
             p.requires_grad = False
@@ -149,6 +168,15 @@ class SRGANModel(BaseModel):
                 fake_fea = self.netF(self.fake_H)
                 l_g_fea = self.l_fea_w * self.cri_fea(fake_fea, real_fea)
                 l_g_total += l_g_fea
+
+            if self.cri_text:
+                _, label, length = text_input
+                input_dict = {}
+                input_dict['images'] = self.fake_H
+                input_dict['rec_target'] = label
+                input_dict['rec_length'] = length
+                output_dict = self.netT(input_dict)
+                l_g_total += output_dict['losses']['loss_rec'].mean(dim=0)
 
             if self.opt['train']['gan_type'] == 'gan':
                 pred_g_fake = self.netD(self.fake_H)
